@@ -8,123 +8,120 @@ CONFIGURACIÓN Y EVENTOS
 
 */
 
+// Botones
 const botones = document.getElementsByTagName("button");
-
 const botonJugar = botones[0];
 const botonYa = botones[1];
 const botonReset = botones[2];
 
+// Eventos
 botonJugar.addEventListener("click", comprobaciones);
-botonYa.addEventListener("click", tirarYCalcular);
-botonYa.disabled = true;
+botonYa.addEventListener("click", tirar);
 botonReset.addEventListener("click", reset);
 
-// Preparamos las imagenes
-const imagenes = document.getElementById("jugador").children;
-Array.from(imagenes).forEach((imagen, i) => {
-  imagen.addEventListener("click", seleccionJugador);
+// Preparamos las imagenes para el jugador
+const imagenesJugador = document.getElementById("jugador").children;
+Array.from(imagenesJugador).forEach((imagen, i) => {
   imagen.src = `img/${posibilidades[i]}Jugador.png`;
-  imagen.setAttribute("data-eleccion", posibilidades[i]);
+  imagen.addEventListener("click", aplicarEstiloSeleccionJugador);
 });
 
 /* 
 ELEMENTOS DOM
 */
 
-const inputs = document.getElementsByTagName("input");
-const inputNombre = inputs[0];
-const inputPartidas = inputs[1];
+const inputNombre = document.querySelector("input[name=nombre]");
+const inputPartidas = document.querySelector("input[name=partidas]");
 const imagenMaquina = document.getElementById("maquina").children[0];
 const historialElemento = document.getElementById("historial");
-const actualElemento = document.getElementById("actual");
-const totalElemento = document.getElementById("total");
+const jugadasActualesEl = document.getElementById("actual");
+const jugadasTotalesEl = document.getElementById("total");
+
 /*
-
 FUNCIONES
-
 */
 
 function comprobaciones() {
   const esNombreValido = comprobarNombre(inputNombre);
-  const esPartidasValido = comprobarPartidas(inputPartidas);
+  const esPartidasValido = comprobarPartidasAJugar(inputPartidas);
+
+  aplicarEstiloComprobacion(inputNombre, esNombreValido);
+  aplicarEstiloComprobacion(inputPartidas, esPartidasValido);
 
   if (esNombreValido && esPartidasValido) {
     inputPartidas.disabled = true;
     inputNombre.disabled = true;
-    totalElemento.innerText = inputPartidas.value;
-    botonYa.disabled = false;
+    jugadasTotalesEl.innerText = inputPartidas.value;
   }
 }
 
-function tirarYCalcular() {
-  if (actualElemento.innerText === totalElemento.innerText) {
+function tirar() {
+  // Si ya hemos jugados todas las partidas, no permite tirar
+  if (jugadasActualesEl.innerText === jugadasTotalesEl.innerText) {
     return;
   }
-  const jugadasActual = actualElemento.innerText;
   // con el + en frente de una variable, convertimos el valor a numero
-  actualElemento.innerHTML = +jugadasActual + 1;
-  // random para la maquina
-  const indexEleccionMaquina = Math.floor(Math.random() * posibilidades.length);
+  jugadasActualesEl.innerText = +jugadasActualesEl.innerText + 1;
+  // obtener index eleccion maquina
+  const indexEleccionMaquina = eleccionMaquina();
+  // obtener index eleccion jugador
+  const indexEleccionJugador = eleccionJugador();
+  const resultado = calcular(indexEleccionJugador, indexEleccionMaquina);
+  anadirHistorial(resultado);
+}
 
-  imagenMaquina.src = `img/${posibilidades[indexEleccionMaquina]}Ordenador.png`;
-  // obtener elemento dom de la imagen seleccionada
-  const jugador = document.getElementsByClassName("seleccionado")[0];
-  // obtener el nombre de la eleccion segun su atributo data
-  const eleccionJugador = jugador.dataset.eleccion;
-  // obtener el index de este valor en el array de posibilidades
-  const indexEleccionJugador = posibilidades.indexOf(eleccionJugador);
+function calcular(indexJugador, indexMaquina) {
   // comprobamos
-  let ganador = undefined;
-  let empate = indexEleccionJugador === indexEleccionMaquina && "Empate";
+  let empate = indexJugador === indexMaquina && "Empate";
 
   if (empate) {
-    return anadirEmpateHistorial(empate);
+    return "Empate";
   }
 
   if (
-    (indexEleccionJugador === 0 &&
-      indexEleccionMaquina === posibilidades.length - 1) ||
-    indexEleccionMaquina === indexEleccionJugador - 1
+    (indexJugador === 0 && indexMaquina === posibilidades.length - 1) ||
+    indexMaquina === indexJugador - 1
   ) {
-    ganador = inputNombre.value;
-  } else if (
-    (indexEleccionMaquina === 0 &&
-      indexEleccionJugador === posibilidades.length - 1) ||
-    indexEleccionJugador === indexEleccionMaquina - 1
-  ) {
-    ganador = "Maquina";
+    return `Gana ${inputNombre.value}`;
+  } else {
+    return "Gana Maquina";
   }
-  anadirGanadorHistorial(ganador);
 }
 
 function reset() {
   inputNombre.disabled = false;
   inputPartidas.disabled = false;
   inputPartidas.value = 0;
-  actualElemento.innerHTML = 0;
-  totalElemento.innerHTML = "0";
+  jugadasActualesEl.innerHTML = 0;
+  jugadasTotalesEl.innerHTML = "0";
   imagenMaquina.src = `img/defecto.png`;
+  resetEstilosJugador(true);
 }
 
-function seleccionJugador() {
-  Array.from(imagenes).forEach((imagen) => {
+function resetEstilosJugador(isReset = false) {
+  Array.from(imagenesJugador).forEach((imagen, i) => {
     imagen.classList.remove("seleccionado");
     imagen.classList.add("noSeleccionado");
+    if (isReset === true && i === 0) {
+      imagen.classList.add("seleccionado");
+      imagen.classList.remove("noSeleccionado");
+    }
   });
+}
+
+function aplicarEstiloSeleccionJugador() {
+  resetEstilosJugador();
+  // este this hace referencia al elemnto del evento que está llamando a esta función, en este caso el evento click del elemento img del jugador
   this.classList.add("seleccionado");
   this.classList.remove("noSeleccionado");
 }
 
 function comprobarNombre(elem) {
-  let test = /^[\D]{1,}[\d\w]{3,}/gm.test(elem.value);
-  aplicarEstiloComprobacion(elem, test);
-  return test;
+  return /^[\D]{1,}[\d\w]{3,}/gm.test(elem.value);
 }
 
-function comprobarPartidas(elem) {
-  let test = elem.value > 0;
-  aplicarEstiloComprobacion(elem, test);
-  return test;
+function comprobarPartidasAJugar(elem) {
+  return elem.value > 0;
 }
 
 function aplicarEstiloComprobacion(elem, test) {
@@ -135,10 +132,20 @@ function aplicarEstiloComprobacion(elem, test) {
   }
 }
 
-function anadirEmpateHistorial(resultado) {
-  historialElemento.innerHTML += `<li>${resultado}</li>`;
+function eleccionMaquina() {
+  const index = Math.floor(Math.random() * posibilidades.length);
+  imagenMaquina.src = `img/${posibilidades[index]}Ordenador.png`;
+  return index;
 }
 
-function anadirGanadorHistorial(ganador) {
-  historialElemento.innerHTML += `<li>Gana ${ganador}</li>`;
+function eleccionJugador() {
+  const jugador = document.getElementsByClassName("seleccionado")[0];
+  // obtener el nombre de la eleccion del jugador
+  const eleccionJugador = jugador.src.match(/img\/([\w]+)Jugador.png/)[1];
+  // obtener el index de este valor en el array de posibilidades
+  return posibilidades.indexOf(eleccionJugador);
+}
+
+function anadirHistorial(resultado) {
+  historialElemento.innerHTML += `<li>${resultado}</li>`;
 }
