@@ -83,9 +83,9 @@ function calcular(indexJugador, indexMaquina) {
     indexMaquina === indexJugador - 1
   ) {
     return `Gana ${inputNombre.value}`;
-  } else {
-    return "Gana Maquina";
   }
+
+  return "Gana Maquina";
 }
 
 function reset() {
@@ -96,6 +96,7 @@ function reset() {
   jugadasTotalesEl.innerHTML = "0";
   imagenMaquina.src = `img/defecto.png`;
   resetEstilosJugador(true);
+  anadirHistorial("Nueva partida");
 }
 
 function resetEstilosJugador(isReset = false) {
